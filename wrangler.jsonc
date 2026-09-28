@@ -23,5 +23,20 @@
 	"ai": {
 		"binding": "AI",
 		"remote": true
-	}
+	},
+	/**
+	 * Rate limiting for Jev requests: 30 a minute per verified visitor, shared
+	 * by live checks and submits. `namespace_id` must be unique within your
+	 * Cloudflare account; rate limiters that share one also share their counts.
+	 */
+	"ratelimits": [
+		{
+			"name": "JEV_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 30,
+				"period": 60
+			}
+		}
+	]
 }

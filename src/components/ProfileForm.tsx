@@ -1,6 +1,6 @@
 import { useForm } from '@tanstack/react-form'
 import type { AnyFieldApi } from '@tanstack/react-form'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InputHTMLAttributes } from 'react'
 import {
   CHECK_INPUTS,
@@ -17,6 +17,8 @@ import type { CheckResult, CheckedField, ProfileValues } from '#/validation/prof
 import { LiveCheckTracker } from '#/validation/live-checks'
 import { submitProfile } from '#/validation/submit-profile'
 import { validateField } from '#/validation/validate-field'
+import { verifyHuman } from '#/validation/verify-human'
+import { RATE_LIMITED, isRateLimited } from '#/validation/human'
 import { liveChecksThenFinalCheck } from '#/validation/validation-logic'
 import {
   FeedbackText,
@@ -25,6 +27,7 @@ import {
   inputClassName,
 } from './FormField'
 import type { FieldFeedback } from './FormField'
+import { HumanSession } from './human-session'
 import { Toast } from './Toast'
 
 const CHECK_DEBOUNCE_MS = 600
@@ -33,6 +36,8 @@ const CHECK_DEBOUNCE_MS = 600
 const REQUIRED_MESSAGE = 'Required.'
 const LIVE_UNAVAILABLE = "Couldn't check right now."
 const FINAL_UNAVAILABLE = "Couldn't check. Try again."
+const LIVE_RATE_LIMITED = 'Too many checks for now.'
+const SUBMIT_RATE_LIMITED = 'Too many requests. Please wait a minute and try again.'
 const SUCCESS_MESSAGE = 'Everything checks out. Your details passed validation.'
 
 /** Kept apart from errors: positive feedback, or a check that couldn't run. */
@@ -70,11 +75,19 @@ function liveNotice(result: CheckResult): FieldFeedback | undefined {
   return undefined
 }
 
-export function ProfileForm() {
+export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const [notices, setNotices] = useState<Notices>({})
   const [toast, setToast] = useState<string | null>(null)
   const dismissToast = useCallback(() => setToast(null), [])
   const [liveChecks] = useState(() => new LiveCheckTracker())
+  const [human] = useState(
+    () => new HumanSession((token) => verifyHuman({ data: { token } })),
+  )
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (turnstileRef.current) void human.mount(turnstileRef.current, turnstileSiteKey)
+    return () => human.unmount()
+  }, [human, turnstileSiteKey])
   // Jev requests running per field. Tracked here because, in our testing with
   // TanStack Form 1.33.5, `isValidating` was only reliable for a field's first
   // check.
@@ -120,14 +133,30 @@ export function ProfileForm() {
     validators: {
       onSubmitAsync: async ({ value, signal }) => {
         const fields = fieldsToCheck(value)
-        const response = await submitProfile({
-          data: {
-            ...value,
-            // Hidden fields are never sent.
-            phone: isVisible('phone', value.contactPreference) ? value.phone : '',
-          },
-          signal,
-        }).catch((): SubmitResponse => ({ valid: false, results: {} }))
+        let rateLimited = false
+        const response = await human
+          .run(() =>
+            submitProfile({
+              data: {
+                ...value,
+                // Hidden fields are never sent.
+                phone: isVisible('phone', value.contactPreference) ? value.phone : '',
+              },
+              signal,
+            }),
+          )
+          .catch((error): SubmitResponse => {
+            rateLimited = isRateLimited(error)
+            return { valid: false, results: {} }
+          })
+
+        // Not a validation failure: nothing was checked, so no field errors are
+        // shown, and live checks resume until the visitor submits again.
+        if (rateLimited) {
+          liveChecks.reset()
+          setToast(SUBMIT_RATE_LIMITED)
+          return { form: RATE_LIMITED, fields: {} }
+        }
 
         const errors: Partial<Record<CheckedField, string>> = {}
         const nextNotices: Notices = {}
@@ -172,17 +201,24 @@ export function ProfileForm() {
 
       const check = liveChecks.start(field, values, signal)
       trackChecking(field, 1)
-      const result = await validateField({
-        data: { field, values },
-        signal: check.signal,
-      })
-        .catch((): CheckResult => ({ status: 'unavailable' }))
+      let rateLimited = false
+      const result = await human
+        .run(() => validateField({ data: { field, values }, signal: check.signal }))
+        .catch((error): CheckResult => {
+          rateLimited = isRateLimited(error)
+          return { status: 'unavailable' }
+        })
         .finally(() => {
           trackChecking(field, -1)
           liveChecks.finish(check)
         })
       if (!liveChecks.canApply(check, checkValues(field, form.state.values))) {
         return ignore()
+      }
+      // This isn't a result: show a notice, and check again on the next edit or submit.
+      if (rateLimited) {
+        setNotice(field, { tone: 'neutral', text: LIVE_RATE_LIMITED })
+        return undefined
       }
 
       setNotice(field, liveNotice(result))
@@ -333,6 +369,9 @@ export function ProfileForm() {
             )}
           </form.Field>
         </div>
+
+        {/* Turnstile stays invisible unless it needs the visitor to interact. */}
+        <div ref={turnstileRef} className="flex justify-center" />
 
         <form.Subscribe selector={(state) => state.isSubmitting}>
           {(isSubmitting) => (

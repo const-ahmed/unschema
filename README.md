@@ -39,6 +39,7 @@ Design choices:
 - **User input is treated as data.** It never goes into Jev's instructions, and Jev is told to ignore any instructions inside it.
 - **Jev's answer is the decision.** There are no probability cut-offs.
 - **Jev's responses are checked, not trusted.** Anything unexpected is reported as "couldn't check".
+- **Only verified visitors reach Jev, at a limited rate.** Cloudflare Turnstile checks each visitor is human, and each verified visitor can make up to 30 Jev requests a minute, so bots and scripts can't run up the bill.
 
 ## Stack
 
@@ -71,6 +72,24 @@ You need Node 24.21.0 or later (see `.nvmrc`), pnpm 12.6.0 (`corepack enable` pi
 
 The app runs locally, but Workers AI has no local mode: every Jev check runs on Cloudflare, so the dev server needs Cloudflare credentials to start.
 
+Bot protection uses [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/). Create a widget in the Cloudflare dashboard, allowing `localhost` and your own domain, then set three variables:
+
+| Variable             | Purpose                                                   |
+| -------------------- | --------------------------------------------------------- |
+| `TURNSTILE_SITE_KEY` | Public identifier for the Turnstile widget                |
+| `TURNSTILE_SECRET`   | Private key used to verify Turnstile tokens               |
+| `SESSION_SECRET`     | Private key used to sign verification sessions (at least 32 random characters, for example from `openssl rand -base64 32`) |
+
+For local development, put them in a `.env` file in the project root. It's git-ignored, so it won't be committed. For your Cloudflare deployment, store them as Worker secrets (after `pnpm install`, below):
+
+```sh
+pnpm wrangler secret put TURNSTILE_SITE_KEY
+pnpm wrangler secret put TURNSTILE_SECRET
+pnpm wrangler secret put SESSION_SECRET
+```
+
+Then install and run:
+
 ```sh
 pnpm install
 pnpm wrangler whoami  # check whether you're already signed in
@@ -100,4 +119,4 @@ The unit tests cover Jev's request and response handling, every rule's outcomes,
 
 `pnpm deploy` publishes a single Worker named `unschema`. A custom domain can be added to it in Cloudflare.
 
-Each check is a billed request, so add rate limiting (and ideally a bot check such as Cloudflare Turnstile) before making the site public.
+Before deploying, set the three Turnstile variables as Worker secrets (see Getting started). The rate limiter's `namespace_id` in `wrangler.jsonc` must also be unique within your Cloudflare account; rate limiters that share one also share their counts.

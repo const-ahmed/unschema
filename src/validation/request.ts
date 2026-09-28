@@ -76,6 +76,25 @@ export function parseProfileSubmission(
   return values;
 }
 
+/** Turnstile tokens are at most 2048 characters. */
+const MAX_TURNSTILE_TOKEN_LENGTH = 2048;
+
+export type HumanVerificationRequest = { token: string };
+
+export function parseHumanVerificationRequest(
+  input: HumanVerificationRequest,
+): HumanVerificationRequest {
+  const { token } = asRecord(input);
+  if (
+    typeof token !== "string" ||
+    token.length === 0 ||
+    token.length > MAX_TURNSTILE_TOKEN_LENGTH
+  ) {
+    throw new TypeError("Invalid Turnstile token.");
+  }
+  return { token };
+}
+
 function parseValue(value: unknown): string {
   if (typeof value !== "string") {
     throw new TypeError("Values must be strings.");

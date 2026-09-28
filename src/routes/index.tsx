@@ -1,7 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ProfileForm } from '#/components/ProfileForm'
+import { getTurnstileSiteKey } from '#/validation/verify-human'
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/')({
+  loader: () => getTurnstileSiteKey(),
+  component: Home,
+})
 
 const LINKS = [
   { label: 'X', href: 'https://x.com/4hmedh4ss4n' },
@@ -11,9 +15,10 @@ const LINKS = [
 
 // Fits the screen, so the page never scrolls.
 function Home() {
+  const turnstileSiteKey = Route.useLoaderData()
   return (
     <main className="flex h-dvh flex-col items-center justify-center gap-3 p-3 short:gap-1 short:px-2 short:py-1 tall:p-6">
-      <ProfileForm />
+      <ProfileForm turnstileSiteKey={turnstileSiteKey} />
       <nav aria-label="Links">
         <ul className="flex gap-5 text-sm leading-5 text-neutral-500 short:text-xs short:leading-4">
           {LINKS.map(({ label, href }) => (
