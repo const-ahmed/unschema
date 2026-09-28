@@ -5,9 +5,9 @@ import appCss from '../styles.css?url'
 const SITE_URL = 'https://unschema.co.uk/'
 const TITLE = 'unschema'
 const DESCRIPTION = 'Natural-language semantic form validation with Jev.'
-const OG_IMAGE = 'https://unschema.co.uk/og.png?v=2'
+const OG_IMAGE = 'https://unschema.co.uk/og.png?v=3'
 const OG_IMAGE_ALT =
-  'unschema: a bio validation rule written in plain English beside a filled-in form where Jev flags the bio "Hi, I\'m Maya!" as too brief.'
+  'unschema: a bio validation rule written in plain English beside a filled-in form where Jev flags the bio "Hi, I\'m Ahmed!" as too brief.'
 
 export const Route = createRootRoute({
   head: () => ({
