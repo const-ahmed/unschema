@@ -32,7 +32,6 @@ import { Toast } from './Toast'
 
 const CHECK_DEBOUNCE_MS = 600
 
-// Short messages fit under half-width fields on small phones.
 const REQUIRED_MESSAGE = 'Required.'
 const LIVE_UNAVAILABLE = "Couldn't check right now."
 const FINAL_UNAVAILABLE = "Couldn't check. Try again."
@@ -296,7 +295,11 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
             autoComplete: 'family-name',
             'aria-required': false,
           })}
-          {textField('dateOfBirth', 'Date of birth', { type: 'date', autoComplete: 'bday' })}
+          {textField('dateOfBirth', 'Date of birth', {
+            type: 'date',
+            autoComplete: 'bday',
+            className: 'appearance-none [&::-webkit-date-and-time-value]:text-left',
+          })}
 
           <form.Field name="contactPreference">
             {(field) => {
@@ -370,7 +373,6 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
           </form.Field>
         </div>
 
-        {/* Turnstile stays invisible unless it needs the visitor to interact. */}
         <div ref={turnstileRef} className="flex justify-center" />
 
         <form.Subscribe selector={(state) => state.isSubmitting}>
@@ -393,6 +395,7 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
 
 function TextInput({
   field,
+  className = '',
   ...props
 }: { field: AnyFieldApi } & InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -403,7 +406,7 @@ function TextInput({
       onChange={(event) => field.handleChange(event.target.value)}
       onBlur={field.handleBlur}
       aria-required
-      className={`${inputClassName} h-10 short:h-9 tall:h-11`}
+      className={`${inputClassName} h-10 short:h-9 tall:h-11 ${className}`}
       {...props}
     />
   )

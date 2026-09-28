@@ -2,10 +2,6 @@ import { useEffect } from 'react'
 
 const DISMISS_AFTER_MS = 5000
 
-/**
- * The message area is always there, so screen readers read out the message
- * when it appears.
- */
 export function Toast({
   message,
   onDismiss,

@@ -35,10 +35,6 @@ const TONE_CLASSES: Record<FieldFeedback['tone'], string> = {
   pending: 'text-neutral-400',
 }
 
-/**
- * The message area is always there, so it keeps its space and screen readers
- * read out changes.
- */
 export function FormField({
   id,
   label,
@@ -86,6 +82,5 @@ export function FeedbackText({
   )
 }
 
-/** 16px text stops iOS zooming in when a field is focused. */
 export const inputClassName =
   'w-full min-w-0 rounded-lg bg-white/5 px-3 text-base text-neutral-100 ring-1 ring-white/10 outline-none transition placeholder:text-neutral-500 focus-visible:ring-2 focus-visible:ring-zinc-400 aria-invalid:ring-rose-400/70'

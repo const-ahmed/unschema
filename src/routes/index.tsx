@@ -13,7 +13,6 @@ const LINKS = [
   { label: 'GitHub', href: 'https://github.com/const-ahmed/unschema' },
 ]
 
-// Fits the screen, so the page never scrolls.
 function Home() {
   const turnstileSiteKey = Route.useLoaderData()
   return (
