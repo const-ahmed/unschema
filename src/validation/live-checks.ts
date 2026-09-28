@@ -3,22 +3,12 @@ import type { CheckValues, CheckedField } from "./profile";
 export type LiveCheck = {
   readonly field: CheckedField;
   readonly values: CheckValues;
-  /** Pass to the request. Aborted when a newer check or a submission replaces it. */
   readonly signal: AbortSignal;
   readonly epoch: number;
   readonly controller: AbortController;
 };
 
-/**
- * Stops live checks from overwriting the final check.
- *
- * When the user submits, all running live checks are cancelled. A cancelled
- * request can still answer, so a result is also ignored if a submission has
- * started since, or if the values it checked have changed.
- *
- * After submitting, the final results stay until the user edits a field (or
- * one its rule reads). Then live checks start again.
- */
+/** Stops late live checks overwriting the final check, whose results stand until an edit. */
 export class LiveCheckTracker {
   #epoch = 0;
   #settled = new Set<CheckedField>();
@@ -70,7 +60,6 @@ export class LiveCheckTracker {
     for (const field of fields) this.#settled.delete(field);
   }
 
-  /** Results from checks still running are ignored after a reset. */
   reset(): void {
     this.#epoch++;
     this.#settled.clear();

@@ -1,4 +1,5 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { TURNSTILE_SCRIPT_URL } from '#/components/human-session'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -14,6 +15,7 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      { rel: 'preconnect', href: 'https://challenges.cloudflare.com' },
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       {
@@ -22,6 +24,7 @@ export const Route = createRootRoute({
       },
       { rel: 'stylesheet', href: appCss },
     ],
+    scripts: [{ src: TURNSTILE_SCRIPT_URL, async: true }],
   }),
   shellComponent: RootDocument,
 })

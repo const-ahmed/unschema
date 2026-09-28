@@ -1,22 +1,13 @@
-/**
- * One live Jev call, to confirm Cloudflare access and the response shape.
- *
- *   pnpm smoke:jev
- *
- * This makes one real, billed Workers AI request. It requires `wrangler login`
- * (or CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID). It uses the remote `AI`
- * binding from wrangler.jsonc and the same rule code as the app.
- * Unit tests never call this.
- */
+/** One real, billed Jev call: `pnpm smoke:jev`. */
 import { getPlatformProxy } from 'wrangler'
-import { JEV_MODEL } from '../src/server/jev.ts'
+import { runJev } from '../src/server/jev.ts'
 import { checkField, todayUtc } from '../src/server/rules.ts'
 
 const { env, dispose } = await getPlatformProxy<Env>()
 
 try {
   const result = await checkField(
-    (request) => env.AI.run(JEV_MODEL, request),
+    (request) => runJev(env.AI, request),
     'firstName',
     { firstName: 'Ada' },
     todayUtc(),

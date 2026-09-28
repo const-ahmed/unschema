@@ -12,7 +12,9 @@ declare global {
   }
 }
 
-const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+export const TURNSTILE_SCRIPT_URL =
+  'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+const SCRIPT_TIMEOUT_MS = 15_000
 const EXPIRY_MARGIN_MS = 60_000
 
 let scriptPromise: Promise<Turnstile> | undefined
@@ -20,38 +22,40 @@ let scriptPromise: Promise<Turnstile> | undefined
 function loadTurnstile(): Promise<Turnstile> {
   scriptPromise ??= new Promise((resolve, reject) => {
     if (window.turnstile) return resolve(window.turnstile)
-    const script = document.createElement('script')
-    script.src = SCRIPT_URL
-    script.async = true
-    script.onload = () =>
-      window.turnstile
-        ? resolve(window.turnstile)
-        : reject(new Error('Turnstile failed to load.'))
-    script.onerror = () => {
+    const fail = () => {
       scriptPromise = undefined
       reject(new Error('Turnstile failed to load.'))
     }
-    document.head.appendChild(script)
+    let script = document.querySelector<HTMLScriptElement>(
+      `script[src="${TURNSTILE_SCRIPT_URL}"]`,
+    )
+    if (!script) {
+      script = document.createElement('script')
+      script.src = TURNSTILE_SCRIPT_URL
+      script.async = true
+      document.head.appendChild(script)
+    }
+    script.addEventListener(
+      'load',
+      () => (window.turnstile ? resolve(window.turnstile) : fail()),
+      { once: true },
+    )
+    script.addEventListener('error', fail, { once: true })
+    setTimeout(() => (window.turnstile ? resolve(window.turnstile) : fail()), SCRIPT_TIMEOUT_MS)
   })
   return scriptPromise
 }
 
 type Waiter = { resolve: () => void; reject: (error: Error) => void }
 
-/**
- * Server calls go through `run`. It waits until the visitor is verified, and
- * if the server says the session has expired, verifies again and retries once.
- */
 export class HumanSession {
   #verify: (token: string) => Promise<{ verified: boolean; expiresAt?: number }>
   #turnstile: Turnstile | undefined
   #widgetId: string | undefined
   #expiresAt = 0
-  // True while a token or its check is on the way, so anyone waiting will get an answer.
   #busy = true
   #unavailable = false
   #waiters: Waiter[] = []
-  // Stops a slow mount from finishing after the widget was removed.
   #generation = 0
 
   constructor(
@@ -113,7 +117,6 @@ export class HumanSession {
     const session = new Promise<void>((resolve, reject) =>
       this.#waiters.push({ resolve, reject }),
     )
-    // Ask for a new token unless one is already on its way.
     if (!this.#busy && this.#turnstile && this.#widgetId) {
       this.#busy = true
       this.#turnstile.reset(this.#widgetId)

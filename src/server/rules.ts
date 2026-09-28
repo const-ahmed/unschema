@@ -1,8 +1,4 @@
-/**
- * Jev's chosen outcome is the decision; there are no probability cut-offs.
- *
- * Imports end in `.ts` so Node can run this for `scripts/jev-smoke.ts`.
- */
+/** Jev's chosen outcome is the decision; there are no probability cut-offs. */
 import '@tanstack/react-start/server-only'
 import { askJev, choiceQuestion } from './jev.ts'
 import type { JevRequest, JevRun } from './jev.ts'
@@ -175,7 +171,6 @@ export async function checkFields(
       results[field] = { status: 'unavailable' }
       continue
     }
-    // Safe: `askJev` guarantees a valid answer for every question.
     const outcome = RULES[field].outcomes[response.answers[field].choice]
     results[field] = outcome.valid
       ? { status: 'valid', feedback: outcome.feedback }

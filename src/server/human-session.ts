@@ -1,21 +1,13 @@
-/**
- * A session cookie looks like `v1.<expiry>.<id>.<signature>`. The signature
- * is made from the rest using `SESSION_SECRET`, so a cookie can't be made or
- * changed without it. Expiry is checked here, so editing the cookie can't
- * keep an old session alive.
- */
 import '@tanstack/react-start/server-only'
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 const SESSION_VERSION = 'v1'
 export const SESSION_TTL_SECONDS = 30 * 60
-/** Shorter secrets are treated as missing. */
 export const MIN_SESSION_SECRET_LENGTH = 32
 
 const encoder = new TextEncoder()
 const keys = new Map<string, Promise<CryptoKey>>()
 
-/** The token must also have been issued for this site and this form's action. */
 export async function verifyTurnstileToken({
   token,
   secret,
@@ -75,7 +67,6 @@ export async function createSession(
   }
 }
 
-/** Returns the session's random ID if the cookie is genuine and hasn't expired. */
 export async function verifySession(
   value: string | undefined,
   secret: string,
@@ -102,8 +93,6 @@ export async function verifySession(
 
   const signature = fromBase64Url(signatureText)
   if (!signature) return null
-  // `verify` takes the same time whether or not the signature matches, so
-  // timing can't give it away.
   const genuine = await crypto.subtle.verify(
     'HMAC',
     await signingKey(secret),

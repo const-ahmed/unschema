@@ -39,7 +39,7 @@ Design choices:
 - **User input is treated as data.** It never goes into Jev's instructions, and Jev is told to ignore any instructions inside it.
 - **Jev's answer is the decision.** There are no probability cut-offs.
 - **Jev's responses are checked, not trusted.** Anything unexpected is reported as "couldn't check".
-- **Only verified visitors reach Jev, at a limited rate.** Cloudflare Turnstile checks each visitor is human, and each verified visitor can make up to 30 Jev requests a minute, so bots and scripts can't run up the bill.
+- **Only verified visitors reach Jev, at a limited rate.** Cloudflare Turnstile checks each visitor is human invisibly in the background, with no checkbox, and each verified visitor can make up to 30 Jev requests a minute, so bots and scripts can't run up the bill.
 
 ## Stack
 
@@ -49,7 +49,7 @@ Design choices:
 | Forms     | [TanStack Form](https://tanstack.com/form)                                              |
 | Styling   | Tailwind CSS                                                                            |
 | Hosting   | Cloudflare Workers, via `@cloudflare/vite-plugin`                                       |
-| AI        | Cloudflare Workers AI, model `typesafe/jev`                                             |
+| AI        | Cloudflare Workers AI through AI Gateway, model `typesafe/jev`                          |
 | Tooling   | TypeScript, Vite, Vitest, pnpm, Node.js                                                 |
 
 ## Project structure
@@ -68,11 +68,13 @@ scripts/jev-smoke.ts           one real Jev call, run by hand
 
 ## Getting started
 
-You need Node 24.21.0 or later (see `.nvmrc`), pnpm 12.6.0 (`corepack enable` picks it up from `package.json`), and a Cloudflare account with Workers AI.
+You need Node 24.21.0 or later (see `.nvmrc`), pnpm 12.6.0 (`corepack enable` picks it up from `package.json`), and a Cloudflare account with Workers AI and an AI Gateway.
 
 The app runs locally, but Workers AI has no local mode: every Jev check runs on Cloudflare, so the dev server needs Cloudflare credentials to start.
 
-Bot protection uses [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/). Create a widget in the Cloudflare dashboard, allowing `localhost` and your own domain, then set three variables:
+Every Jev request goes through an AI Gateway named `unschema` (set in `src/server/jev.ts`), so usage can be paid from prepaid credits with AI Gateway's Unified Billing. Create a gateway with that name in the Cloudflare dashboard, or change the name in the code.
+
+Bot protection uses [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/). Create a widget in **Invisible** mode in the Cloudflare dashboard, allowing `localhost` and your own domains, then set three variables:
 
 | Variable             | Purpose                                                   |
 | -------------------- | --------------------------------------------------------- |
@@ -99,7 +101,7 @@ pnpm dev              # http://localhost:3000
 
 Instead of logging in, you can set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, which suits shells without a browser.
 
-Each check is a real Workers AI request and may incur usage charges on your Cloudflare account.
+Each check is a real Workers AI request through AI Gateway and may incur usage charges on your Cloudflare account.
 
 ## Scripts
 
@@ -120,3 +122,7 @@ The unit tests cover Jev's request and response handling, every rule's outcomes,
 `pnpm deploy` publishes a single Worker named `unschema`. A custom domain can be added to it in Cloudflare.
 
 Before deploying, set the three Turnstile variables as Worker secrets (see Getting started). The rate limiter's `namespace_id` in `wrangler.jsonc` must also be unique within your Cloudflare account; rate limiters that share one also share their counts.
+
+To pay for Jev with prepaid credits, set the `unschema` gateway's **Workers AI Billing** to **Unified billing** in the Cloudflare dashboard.
+
+Turnstile's invisible mode requires your privacy policy to reference Cloudflare's [Turnstile Privacy Addendum](https://www.cloudflare.com/turnstile-privacy-policy/).

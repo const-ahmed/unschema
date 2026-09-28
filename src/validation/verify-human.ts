@@ -18,7 +18,6 @@ import { parseHumanVerificationRequest } from './request'
 
 type Variable = 'TURNSTILE_SITE_KEY' | 'TURNSTILE_SECRET' | 'SESSION_SECRET'
 
-/** Read by name, so this works even if the generated types don't list them. */
 function readVariable(name: Variable): string | undefined {
   const value = (env as unknown as Record<string, unknown>)[name]
   return typeof value === 'string' && value !== '' ? value : undefined
@@ -35,11 +34,6 @@ function sessionSecret(): string | undefined {
   return secret
 }
 
-/**
- * On HTTPS the cookie is only sent over secure connections, and the `__Host-`
- * name stops other subdomains setting it. Local development uses plain HTTP,
- * so neither applies there.
- */
 function sessionCookie() {
   const secure = getRequestUrl().protocol === 'https:'
   return {
@@ -54,7 +48,6 @@ function sessionCookie() {
   }
 }
 
-/** The site key is public, so it's safe to send to the browser. */
 export const getTurnstileSiteKey = createServerFn({ method: 'GET' }).handler(
   () => readVariable('TURNSTILE_SITE_KEY') ?? '',
 )
@@ -84,10 +77,6 @@ export const verifyHuman = createServerFn({ method: 'POST' })
     return { verified: true as const, expiresAt: session.expiresAt }
   })
 
-/**
- * Rejects requests without a valid session before any other code runs, so
- * unverified requests never reach Jev.
- */
 export const requireHuman = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
     const secret = sessionSecret()
@@ -102,11 +91,6 @@ export const requireHuman = createMiddleware({ type: 'function' }).server(
   },
 )
 
-/**
- * Allows each verified visitor 30 Jev requests a minute (see `ratelimits` in
- * wrangler.jsonc), shared by live checks and submits. The limit is tied to
- * the ID inside the signed cookie, so visitors can't pick their own.
- */
 export const limitJevRequests = createMiddleware({ type: 'function' })
   .middleware([requireHuman])
   .server(async ({ next, context }) => {

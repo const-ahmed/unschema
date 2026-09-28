@@ -13,7 +13,6 @@ import type {
   ProfileValues,
 } from "./profile";
 
-/** Keeps each Jev request small and cheap. Jev can read up to 32,000 tokens. */
 export const MAX_VALUE_LENGTH = 2000;
 
 export type FieldCheckRequest = {
@@ -23,13 +22,6 @@ export type FieldCheckRequest = {
 
 export type ProfileSubmission = ProfileValues;
 
-/*
- * Safety checks for the server functions, not form validation: the real form
- * never sends anything that fails them. Parameters are typed for callers, but
- * the data could be anything at runtime.
- */
-
-/** Ignores any values the check doesn't use. */
 export function parseFieldCheckRequest(
   input: FieldCheckRequest,
 ): FieldCheckRequest {
@@ -76,7 +68,6 @@ export function parseProfileSubmission(
   return values;
 }
 
-/** Turnstile tokens are at most 2048 characters. */
 const MAX_TURNSTILE_TOKEN_LENGTH = 2048;
 
 export type HumanVerificationRequest = { token: string };

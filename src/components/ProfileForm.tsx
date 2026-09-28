@@ -47,10 +47,7 @@ type SubmitResponse = Awaited<ReturnType<typeof submitProfile>>
 const required = ({ value }: { value: string }) =>
   isBlank(value) ? REQUIRED_MESSAGE : undefined
 
-/**
- * Contact preference decides whether Phone shows, so anything that reads Phone
- * depends on it too.
- */
+/** Phone only shows for the phone contact preference, so it depends on that too. */
 function dependenciesOf(field: CheckedField): (keyof ProfileValues)[] {
   const inputs: (keyof ProfileValues)[] = CHECK_INPUTS[field].filter(
     (input) => input !== field,
@@ -87,9 +84,6 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
     if (turnstileRef.current) void human.mount(turnstileRef.current, turnstileSiteKey)
     return () => human.unmount()
   }, [human, turnstileSiteKey])
-  // Jev requests running per field. Tracked here because, in our testing with
-  // TanStack Form 1.33.5, `isValidating` was only reliable for a field's first
-  // check.
   const [checking, setChecking] = useState<Partial<Record<CheckedField, number>>>(
     {},
   )
@@ -111,14 +105,8 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
   const form = useForm({
     defaultValues: EMPTY_PROFILE,
     validationLogic: liveChecksThenFinalCheck,
-    // Let Submit always run, so empty-field messages show even while other
-    // fields have errors or checks running.
     canSubmitWhenInvalid: true,
     listeners: {
-      // Not `onChangeListenTo`: in our testing with @tanstack/form-core 1.33.5,
-      // it could leave the field that triggered a recheck stuck on
-      // `isValidating`. Editing also ends the final check's hold, so live
-      // checks start again.
       onChange: ({ fieldApi, formApi }) => {
         const dependents = dependentsOf(fieldApi.name)
         liveChecks.resume(
@@ -149,8 +137,6 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
             return { valid: false, results: {} }
           })
 
-        // Not a validation failure: nothing was checked, so no field errors are
-        // shown, and live checks resume until the visitor submits again.
         if (rateLimited) {
           liveChecks.reset()
           setToast(SUBMIT_RATE_LIMITED)
@@ -186,7 +172,6 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
   const liveCheck =
     (field: CheckedField) =>
     async ({ fieldApi, signal }: { fieldApi: AnyFieldApi; signal: AbortSignal }) => {
-      // Returning the current error leaves the field as it is.
       const ignore = () => fieldApi.state.meta.errorMap.onChange
       const values = checkValues(field, form.state.values)
       if (values[field] === undefined) {
@@ -214,7 +199,6 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
       if (!liveChecks.canApply(check, checkValues(field, form.state.values))) {
         return ignore()
       }
-      // This isn't a result: show a notice, and check again on the next edit or submit.
       if (rateLimited) {
         setNotice(field, { tone: 'neutral', text: LIVE_RATE_LIMITED })
         return undefined
@@ -230,11 +214,7 @@ export function ProfileForm({ turnstileSiteKey }: { turnstileSiteKey: string }) 
     onSubmit: isOptional(field) ? undefined : required,
   })
 
-  /**
-   * Jev can be wrong, so a live rejection shouldn't block submitting. Once
-   * every required field is filled, running live checks are cancelled, live
-   * errors are cleared, and the final check always runs.
-   */
+  /** Jev can be wrong, so a live rejection doesn't block submitting: the final check always runs. */
   const submit = () => {
     if (form.state.isSubmitting) return
     const { values } = form.state

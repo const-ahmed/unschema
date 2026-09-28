@@ -1,9 +1,3 @@
-/**
- * Used by both the browser and the server, so no rules are here; they stay
- * on the server in `src/server/rules.ts`. No imports, so Node can run it for
- * `scripts/jev-smoke.ts`.
- */
-
 export const CONTACT_PREFERENCES = ["email", "phone"] as const;
 export type ContactPreference = (typeof CONTACT_PREFERENCES)[number];
 
@@ -45,10 +39,7 @@ export const CHECK_INPUTS = {
   bio: ["bio", "firstName", "lastName", "dateOfBirth", "email", "phone"],
 } as const satisfies Record<CheckedField, readonly CheckedField[]>;
 
-/**
- * Last name is optional so people with one name can finish the form. An empty
- * optional field isn't checked.
- */
+/** Last name is optional for people with one name. An empty optional field isn't checked. */
 export const OPTIONAL_FIELDS: readonly CheckedField[] = ["lastName"];
 
 export type CheckValues = Partial<Record<CheckedField, string>>;
