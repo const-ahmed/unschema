@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output and caches
+dist/
+dist-ssr/
+.output/
+.tanstack/
+.nitro/
+.vinxi/
+__unconfig*
+coverage/
+*.tsbuildinfo
+
+# Environment files, credentials and secrets
+.env
+.env.*
+!.env.example
+.dev.vars*
+!.dev.vars.example
+*.local
+*.pem
+
+# Cloudflare / Wrangler local state
+.wrangler/
+
+# Claude Code configuration, instructions and session files
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+
+# Scratch files and temporary scripts
+/scratch/
+/tmp/
+
+# Logs
+*.log
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,27 @@
+/**
+ * Wrangler configuration for Unschema.
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ *
+ * After changing bindings, regenerate types with `pnpm cf-typegen`.
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "unschema",
+	"compatibility_date": "2026-09-27",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	/**
+	 * Workers AI. Used server-side to call the `typesafe/jev` model.
+	 * There is no local simulation of Workers AI, so `remote: true` routes
+	 * calls made during `pnpm dev` to the real model on your Cloudflare account.
+	 * Those calls are billed.
+	 */
+	"ai": {
+		"binding": "AI",
+		"remote": true
+	}
+}

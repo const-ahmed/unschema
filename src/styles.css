@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+/* Spacing follows the viewport's height so the form always fits without
+   scrolling: compact on short viewports (such as phones with browser toolbars
+   showing), regular by default, and spacious only on tall ones. `low` covers
+   wide but very short viewports, such as phones in landscape. */
+@custom-variant short (@media (max-height: 700px));
+@custom-variant tall (@media (min-height: 880px));
+@custom-variant low (@media (max-height: 500px) and (min-width: 640px));
+
+@theme {
+  --font-display: 'Chakra Petch', system-ui, sans-serif;
+}
+
+:root {
+  /* Tiles are slightly wider than tall, matching the reference wall. */
+  --tile-w: clamp(180px, 27vw, 278px);
+  --tile-h: calc(var(--tile-w) * 0.892);
+  --tile: #17181f;
+  /* Recessed grout: a darker edge followed by a lighter lip. */
+  --grout-shadow: #0b0c10;
+  --grout-light: #23252f;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: system-ui, sans-serif;
+  color: #e5e5e5;
+  background-color: var(--tile);
+  background-image:
+    linear-gradient(
+      90deg,
+      var(--grout-shadow) 0 2px,
+      var(--grout-light) 2px 5px,
+      transparent 5px
+    ),
+    linear-gradient(
+      180deg,
+      var(--grout-shadow) 0 2px,
+      var(--grout-light) 2px 5px,
+      transparent 5px
+    );
+  background-size: var(--tile-w) var(--tile-h);
+  /* Put a grout line through the centre of the viewport in both directions. */
+  background-position:
+    calc(50% + var(--tile-w) / 2 - 1px) calc(50% + var(--tile-h) / 2 - 1px);
+  background-attachment: fixed;
+}
